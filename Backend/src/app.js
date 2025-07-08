@@ -6,11 +6,12 @@ const app = e();
 
 //middlewares
 app.use(
-  //cross origin resource sharing, allows different frontend port to access backend with diff port
-  cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true,
-  })
+  // // cross origin resource sharing, allows different frontend port to access backend with diff port
+  // cors({
+  //   origin: process.env.CORS_ORIGIN,
+  //   credentials: true,
+  // })
+  cors()
 );
 
 app.use(e.json({ limit: "16kb" }));
@@ -29,8 +30,13 @@ app.use(cookieParser()); //helps read cookies from the browser
 
 //import routes
 import healthCheck from "./routes/healthcheck.routes.js";
+import patientRouter from "./routes/patient.routes.js";
 
 //routes
-app.use("/api/v1/healthcheck", healthCheck);
+app.use("/api/healthcheck", healthCheck);
+app.use("/api/patients", patientRouter); //routes should always start with /
+// app.use("/", (req, res) => {
+//   res.send("Hello World");
+// });
 
 export default app;

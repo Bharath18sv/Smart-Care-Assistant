@@ -1,14 +1,14 @@
 import app from "./app.js";
 import dotenv from "dotenv";
 import connectDB from "./db/index.js";
-const port = process.env.PORT || 7001;
+const port = process.env.PORT || 5002;
 
-dotenv.config(); //we can pass the path to this, by default will look in the root directory
+dotenv.config({ path: "../.env" }); //we can pass the path to this, by default will look in the root directory
 
 connectDB()
   .then(
     app.listen(port, () => {
-      console.log("Server running on port: ", port);
+      console.log("Server running on port:", port);
     })
   )
   .catch((err) => {

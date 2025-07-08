@@ -13,9 +13,12 @@ const registerPatient = asyncHandler(async (req, res) => {
 
   //check whether all fields are passed from the request
   if (
-    [email, password, fullname, gender, age, phone, address].some(
-      (field) => !field.trim()
-    )
+    [email, password, fullname, gender, phone].some(
+      (field) => typeof field !== "string" || !field.trim()
+    ) ||
+    typeof age !== "number" ||
+    !address ||
+    typeof address !== "object"
   ) {
     throw new ApiError(400, "Validation failed: Missing required fields");
   }
@@ -38,13 +41,14 @@ const registerPatient = asyncHandler(async (req, res) => {
 
   //upload image to cloudinary
   let profilePic;
-
-  try {
-    profilePic = await uploadOnCloudinary(profilePicLocalPath);
-    console.log("Profile picture uploaded successfully");
-  } catch (error) {
-    console.log("profile pic upload failed");
-    throw new ApiError(500, "Failed to upload Profile picture");
+  if (profilePicLocalPath) {
+    try {
+      profilePic = await uploadOnCloudinary(profilePicLocalPath);
+      console.log("Profile picture uploaded successfully");
+    } catch (error) {
+      console.log("profile pic upload failed", error);
+      throw new ApiError(500, "Failed to upload Profile picture");
+    }
   }
 
   //create the patient/user
@@ -77,7 +81,7 @@ const registerPatient = asyncHandler(async (req, res) => {
         new ApiResponse(200, createdPatient, "User registered Successfully")
       );
   } catch (error) {
-    console.log("User creation failed");
+    console.log("User creation failed", error);
     if (profilePic) {
       deleteFromCloudinary(profilePic.public_id);
     }
