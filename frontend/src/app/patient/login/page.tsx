@@ -20,8 +20,8 @@ export default function LoginPage() {
 
       localStorage.setItem("token", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      
-      router.push("/dashboard");
+
+      router.push("/doctor/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.message || "Login failed");
     }

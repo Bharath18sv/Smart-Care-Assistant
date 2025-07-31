@@ -62,6 +62,12 @@ const patientSchema = new Schema(
       zip: { type: String },
       country: { type: String, default: "India" },
     },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "Doctor",
+      default: null,
+      // required: true,
+    },
     refreshToken: {
       type: String,
     },
@@ -82,12 +88,14 @@ patientSchema.methods.isPasswordCorrect = function (password) {
 };
 
 //methods for generating tokens
-patientSchema.methods.generateAccessToken = async function () { //arrow function is not used because we cannot access this keyword
+patientSchema.methods.generateAccessToken = async function () {
+  //arrow function is not used because we cannot access this keyword
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
       fullname: this.fullname,
+      role: "patient",
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

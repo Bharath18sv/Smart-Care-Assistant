@@ -1,4 +1,4 @@
-export default function InputField({ label, ...props }) {
+export default function InputField({ label, ...props }: any) {
   return (
     <div className="mb-4">
       <label className="block text-sm mb-1">{label}</label>

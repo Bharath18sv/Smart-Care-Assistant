@@ -222,4 +222,146 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerPatient, loginPatient, refreshAccessToken };
+const logoutPatient = asyncHandler(async (req, res) => {
+  await Patient.findOneAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    { new: true }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options) //for cookie() it need 3 arguments
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+const updatePassword = asyncHandler(async (req, res) => {
+  const { newPassword, oldPassword } = req.body;
+
+  if (!newPassword || !oldPassword) {
+    throw new ApiError(400, "New password and old password are required");
+  }
+
+  const patient = await Patient.findById(req.user?._id);
+
+  if (!patient) {
+    throw new ApiError(400, "Patient not found");
+  }
+
+  const isPasswordCorrect = await patient.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Old password is incorrect");
+  }
+
+  patient.password = newPassword;
+  await patient.save({ validateBeforeSave: false });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"));
+});
+
+const updateInfo = asyncHandler(async (req, res) => {
+  const { fullname, gender, age, phone, address } = req.body;
+
+  if (!fullname || !gender || !age || !phone || !address) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const patient = await Patient.findById(req.user?._id); //we can use findbyandUpdate also.
+  if (!patient) {
+    throw new ApiError(400, "Patient not found");
+  }
+
+  const updatedPatient = await Patient.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullname,
+        gender,
+        age,
+        phone,
+        address,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedPatient,
+        "Patient information updated successfully"
+      )
+    );
+});
+
+const updateProfilePic = asyncHandler(async (req, res) => {
+  const profilePicLocalPath = req.files?.path;
+
+  if (!profilePicLocalPath) {
+    throw new ApiError(400, "Profile picture is required");
+  }
+
+  const profilePic = await uploadOnCloudinary(profilePicLocalPath);
+
+  if (!profilePic.url) {
+    throw new ApiError(500, "Failed to upload Profile picture");
+  }
+
+  const patient = await Patient.findById(req.user?._id);
+
+  if (!patient) {
+    throw new ApiError(400, "Patient not found");
+  }
+
+  const updatedPatient = await Patient.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        profilePic: profilePic.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedPatient,
+        "Profile picture updated successfully"
+      )
+    );
+});
+
+const getCurrentPatient = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Patient fetched successfully"));
+});
+
+export {
+  registerPatient,
+  loginPatient,
+  refreshAccessToken,
+  logoutPatient,
+  updatePassword,
+  updateInfo,
+  updateProfilePic,
+  getCurrentPatient,
+};

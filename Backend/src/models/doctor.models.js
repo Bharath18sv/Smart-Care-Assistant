@@ -56,7 +56,7 @@ const doctorSchema = new Schema(
       required: true,
     },
     phone: {
-      type: String
+      type: String,
     },
     refreshToken: {
       type: String,
@@ -84,6 +84,7 @@ doctorSchema.methods.generateAccessToken = async function () {
       _id: this._id,
       email: this.email,
       fullname: this.fullname,
+      role: "doctor",
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

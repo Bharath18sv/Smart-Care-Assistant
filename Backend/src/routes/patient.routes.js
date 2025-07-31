@@ -3,7 +3,14 @@ import {
   registerPatient,
   loginPatient,
   refreshAccessToken,
+  logoutPatient,
+  updateInfo,
+  updatePassword,
+  updateProfilePic,
+  getCurrentPatient,
 } from "../controllers/patient.controllers.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
 
@@ -12,5 +19,13 @@ router.route("/register").post(registerPatient);
 router.route("/login").post(loginPatient);
 router.route("/refreshToken").post(refreshAccessToken);
 
-export default router;
+//secured routes
+router.route("/logout").post(verifyJwt, logoutPatient);
+router.route("/updateInfo").post(verifyJwt, updateInfo);
+router.route("/updatePassword").post(verifyJwt, updatePassword);
+router
+  .route("/updateProfilePic")
+  .post(verifyJwt, upload("ProfilePicture"), updateProfilePic);
+router.route("/currentPatient").get(verifyJwt, getCurrentPatient);
 
+export default router;
