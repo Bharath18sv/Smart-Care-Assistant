@@ -25,6 +25,6 @@ A full-stack web application designed to streamline patient registration, user a
 cd backend
 npm install
 
-## Create a .env file with MongoDB URI, JWT secret, and Cloudinary config
+# Create a .env file with MongoDB URI, JWT secret, and Cloudinary config
 
 npm run dev

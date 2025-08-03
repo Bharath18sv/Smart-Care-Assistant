@@ -32,10 +32,12 @@ app.use(cookieParser()); //helps read cookies from the browser
 import healthCheck from "./routes/healthcheck.routes.js";
 import patientRouter from "./routes/patient.routes.js";
 import doctorRouter from "./routes/doctor.routes.js";
+import adminRouter from "./routes/admin.routes.js";
 
 //routes
 app.use("/api/healthcheck", healthCheck);
 app.use("/api/patients", patientRouter); //routes should always start with /
 app.use("/api/doctors", doctorRouter);
+app.use("/api/admin", adminRouter);
 
 export default app;

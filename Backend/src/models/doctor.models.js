@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoosePaginate from "mongoose-paginate-v2";
 import { SPECIALIZATION } from "../constants.js";
 import { QUALIFICATIONS } from "../constants.js";
 
@@ -58,6 +59,30 @@ const doctorSchema = new Schema(
     phone: {
       type: String,
     },
+    isApproved: { //for admin approval
+      type: Boolean,
+      default: false,
+    },
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+    },
+    approvedAt: {
+      type: Date,
+    },
+    addedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "suspended"],
+      default: "pending",
+    },
+    rejectionReason: {
+      type: String,
+    },
     refreshToken: {
       type: String,
     },
@@ -79,7 +104,7 @@ doctorSchema.methods.isPasswordCorrect = function (password) {
 
 //methods for generating tokens
 doctorSchema.methods.generateAccessToken = async function () {
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
       email: this.email,
@@ -94,7 +119,7 @@ doctorSchema.methods.generateAccessToken = async function () {
 };
 
 doctorSchema.methods.generateRefreshToken = async function () {
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
     },
@@ -104,5 +129,8 @@ doctorSchema.methods.generateRefreshToken = async function () {
     }
   );
 };
+
+// Add pagination plugin
+doctorSchema.plugin(mongoosePaginate);
 
 export const Doctor = mongoose.model("Doctor", doctorSchema);

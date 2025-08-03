@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "create-admin": "node src/scripts/createAdmin.js"
   },
   "keywords": [
     "node.js",
@@ -25,6 +26,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
+    "mongoose-paginate-v2": "^1.9.1",
     "multer": "^2.0.2",
     "nodemon": "^3.1.10"
   }

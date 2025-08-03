@@ -43,7 +43,7 @@ const patientSchema = new Schema(
       default: [],
     },
     gender: {
-      type: [String],
+      type: String,
       enum: GENDER,
       required: true,
     },

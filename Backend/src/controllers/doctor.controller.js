@@ -269,7 +269,7 @@ const addPatient = asyncHandler(async (req, res) => {
 });
 
 // Get all patients for a doctor
-export const getPatientsForDoctor = async (req, res) => {
+const getPatientsForDoctor = async (req, res) => {
   const { doctorId } = req.query; // as this is a get request we pass the doctor id in the url itself.
 
   const patients = await Patient.find({ doctorId }).sort({ createdAt: -1 });

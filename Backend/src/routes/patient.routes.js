@@ -25,7 +25,7 @@ router.route("/updateInfo").post(verifyJwt, updateInfo);
 router.route("/updatePassword").post(verifyJwt, updatePassword);
 router
   .route("/updateProfilePic")
-  .post(verifyJwt, upload("ProfilePicture"), updateProfilePic);
+  .post(verifyJwt, upload.single("ProfilePicture"), updateProfilePic);
 router.route("/currentPatient").get(verifyJwt, getCurrentPatient);
 
 export default router;

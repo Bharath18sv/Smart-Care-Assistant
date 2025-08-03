@@ -9,7 +9,7 @@ import { Patient } from "../models/patient.models.js";
 import jwt from "jsonwebtoken";
 
 const registerPatient = asyncHandler(async (req, res) => {
-  const { email, password, fullname, gender, age, phone, address } = req.body;
+  const { email, password, fullname, gender, age, phone, address, chronicConditions, allergies, symptoms } = req.body;
 
   //check whether all fields are passed from the request
   if (
@@ -62,6 +62,9 @@ const registerPatient = asyncHandler(async (req, res) => {
       age,
       phone,
       address,
+      chronicConditions: chronicConditions || [],
+      allergies: allergies || [],
+      symptoms: symptoms || [],
     });
 
     const createdPatient = await Patient.findById(newPatient.id).select(
