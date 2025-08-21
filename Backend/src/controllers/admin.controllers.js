@@ -118,6 +118,18 @@ const logoutAdmin = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Admin logged out"));
 });
 
+// Get current admin profile
+const getCurrentAdmin = asyncHandler(async (req, res) => {
+  // req.admin is set by verifyAdminJWT
+  if (!req.admin) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.admin, "Current admin fetched"));
+});
+
 // Doctor Management
 const addDoctor = asyncHandler(async (req, res) => {
   const {
@@ -347,6 +359,7 @@ export {
   registerAdmin,
   loginAdmin,
   logoutAdmin,
+  getCurrentAdmin,
   addDoctor,
   getAllDoctors,
   getDoctorById,

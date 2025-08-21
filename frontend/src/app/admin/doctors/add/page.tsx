@@ -2,9 +2,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { adminApi } from "@/utils/api";
+import { SPECIALIZATION, QUALIFICATIONS } from "@/app/constants";
+import Select from "react-select";
 
 export default function AddDoctorPage() {
+  const { user: authUser, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,12 +25,10 @@ export default function AddDoctorPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if admin is logged in
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
+    if (!authLoading && !authUser) {
       router.push("/admin/login");
     }
-  }, [router]);
+  }, [authUser, authLoading, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -40,26 +42,20 @@ export default function AddDoctorPage() {
     }));
   };
 
-  const handleSpecializationChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const values = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
+  const handleSpecializationChange = (selectedOptions: any) => {
+    const values = selectedOptions
+      ? selectedOptions.map((option: any) => option.value)
+      : [];
     setFormData((prev: any) => ({
       ...prev,
       specialization: values,
     }));
   };
 
-  const handleQualificationsChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const values = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
+  const handleQualificationsChange = (selectedOptions: any) => {
+    const values = selectedOptions
+      ? selectedOptions.map((option: any) => option.value)
+      : [];
     setFormData((prev: any) => ({
       ...prev,
       qualifications: values,
@@ -72,17 +68,40 @@ export default function AddDoctorPage() {
     setError("");
     setSuccess("");
 
+    // Form validation
+    if (!formData.fullname.trim()) {
+      setError("Full name is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.password.trim()) {
+      setError("Password is required");
+      setLoading(false);
+      return;
+    }
+    if (formData.specialization.length === 0) {
+      setError("At least one specialization is required");
+      setLoading(false);
+      return;
+    }
+    if (formData.qualifications.length === 0) {
+      setError("At least one qualification is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.about.trim()) {
+      setError("About section is required");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/doctors`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await adminApi.addDoctor(formData);
 
       setSuccess("Doctor added successfully!");
       setFormData({
@@ -101,11 +120,39 @@ export default function AddDoctorPage() {
         router.push("/admin/doctors");
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to add doctor");
+      // Handle validation errors specifically
+      if (err.message && err.message.includes("validation failed")) {
+        const validationErrors = [];
+        if (err.message.includes("specialization")) {
+          validationErrors.push(
+            "Invalid specialization selected. Please choose from the available options."
+          );
+        }
+        if (err.message.includes("qualifications")) {
+          validationErrors.push(
+            "Invalid qualification selected. Please choose from the available options."
+          );
+        }
+        setError(validationErrors.join(" "));
+      } else {
+        setError(err.message || "Failed to add doctor");
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -306,30 +353,59 @@ export default function AddDoctorPage() {
               >
                 Specialization *
               </label>
-              <select
-                id="specialization"
-                name="specialization"
-                multiple
-                value={formData.specialization}
+              <Select
+                isMulti
+                options={SPECIALIZATION.map((spec) => ({
+                  value: spec,
+                  label: spec,
+                }))}
+                value={formData.specialization.map((spec) => ({
+                  value: spec,
+                  label: spec,
+                }))}
                 onChange={handleSpecializationChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                required
-              >
-                <option value="Cardiology">Cardiology</option>
-                <option value="Dermatology">Dermatology</option>
-                <option value="Endocrinology">Endocrinology</option>
-                <option value="Gastroenterology">Gastroenterology</option>
-                <option value="Neurology">Neurology</option>
-                <option value="Oncology">Oncology</option>
-                <option value="Orthopedics">Orthopedics</option>
-                <option value="Pediatrics">Pediatrics</option>
-                <option value="Psychiatry">Psychiatry</option>
-                <option value="Radiology">Radiology</option>
-                <option value="Surgery">Surgery</option>
-                <option value="Urology">Urology</option>
-              </select>
+                className="w-full"
+                classNamePrefix="select"
+                placeholder="Select specializations..."
+                isClearable
+                isSearchable
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    border: "1px solid #d1d5db",
+                    borderRadius: "12px",
+                    padding: "4px",
+                    minHeight: "48px",
+                    "&:hover": {
+                      borderColor: "#3b82f6",
+                    },
+                  }),
+                  option: (provided, state) => ({
+                    ...provided,
+                    backgroundColor: state.isSelected
+                      ? "#3b82f6"
+                      : state.isFocused
+                      ? "#eff6ff"
+                      : "white",
+                    color: state.isSelected ? "white" : "#374151",
+                    "&:hover": {
+                      backgroundColor: state.isSelected ? "#3b82f6" : "#eff6ff",
+                    },
+                  }),
+                  multiValue: (provided) => ({
+                    ...provided,
+                    backgroundColor: "#eff6ff",
+                    borderRadius: "8px",
+                  }),
+                  multiValueLabel: (provided) => ({
+                    ...provided,
+                    color: "#1e40af",
+                    fontWeight: "500",
+                  }),
+                }}
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Hold Ctrl (or Cmd on Mac) to select multiple specializations
+                Select one or more specializations
               </p>
             </div>
 
@@ -341,26 +417,59 @@ export default function AddDoctorPage() {
               >
                 Qualifications *
               </label>
-              <select
-                id="qualifications"
-                name="qualifications"
-                multiple
-                value={formData.qualifications}
+              <Select
+                isMulti
+                options={QUALIFICATIONS.map((qual) => ({
+                  value: qual,
+                  label: qual,
+                }))}
+                value={formData.qualifications.map((qual) => ({
+                  value: qual,
+                  label: qual,
+                }))}
                 onChange={handleQualificationsChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                required
-              >
-                <option value="MBBS">MBBS</option>
-                <option value="MD">MD</option>
-                <option value="MS">MS</option>
-                <option value="DM">DM</option>
-                <option value="MCh">MCh</option>
-                <option value="PhD">PhD</option>
-                <option value="Fellowship">Fellowship</option>
-                <option value="Diploma">Diploma</option>
-              </select>
+                className="w-full"
+                classNamePrefix="select"
+                placeholder="Select qualifications..."
+                isClearable
+                isSearchable
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    border: "1px solid #d1d5db",
+                    borderRadius: "12px",
+                    padding: "4px",
+                    minHeight: "48px",
+                    "&:hover": {
+                      borderColor: "#3b82f6",
+                    },
+                  }),
+                  option: (provided, state) => ({
+                    ...provided,
+                    backgroundColor: state.isSelected
+                      ? "#3b82f6"
+                      : state.isFocused
+                      ? "#eff6ff"
+                      : "white",
+                    color: state.isSelected ? "white" : "#374151",
+                    "&:hover": {
+                      backgroundColor: state.isSelected ? "#3b82f6" : "#eff6ff",
+                    },
+                  }),
+                  multiValue: (provided) => ({
+                    ...provided,
+                    backgroundColor: "#eff6ff",
+                    borderRadius: "8px",
+                  }),
+                  multiValueLabel: (provided) => ({
+                    ...provided,
+                    color: "#1e40af",
+                    fontWeight: "500",
+                  }),
+                }}
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Hold Ctrl (or Cmd on Mac) to select multiple qualifications
+                Select one or more qualifications
               </p>
             </div>
 

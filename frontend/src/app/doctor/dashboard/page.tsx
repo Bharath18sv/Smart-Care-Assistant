@@ -1,242 +1,504 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
-import Navbar from "@/components/Navbar"; // Uncomment if component exists
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { doctorApi } from "@/utils/api";
+import Navbar from "@/components/Navbar";
+import {
+  Calendar,
+  Clock,
+  User,
+  Pill,
+  Activity,
+  AlertTriangle,
+  Heart,
+  FileText,
+  Phone,
+  MapPin,
+  Edit,
+  Plus,
+  Users,
+  Stethoscope,
+  TrendingUp,
+  MessageSquare,
+} from "lucide-react";
+import HealthCard from "@/components/HealthCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import AddPatientForm from "@/components/AddPatientForm";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function DoctorDashboard() {
-  const [patients, setPatients] = useState([]);
-  const [doctorId, setDoctorId] = useState<string | null>(null);
+interface DoctorData {
+  _id: string;
+  fullname: string;
+  profilePic?: string;
+  phone: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  age: number;
+  gender: string;
+  email: string;
+  specialization?: string;
+}
 
-  const [form, setForm] = useState({
-    fullname: "",
-    email: "",
-    password: "",
-    gender: "male",
-    age: "",
-    phone: "",
-    address: {
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "India",
-    },
-    chronicConditions: "",
-    allergies: "",
-    symptoms: "",
+interface Patient {
+  _id: string;
+  fullname: string;
+  email: string;
+  phone: string;
+  age: number;
+  gender: string;
+  chronicConditions: string[];
+  allergies: string[];
+  symptoms: string[];
+  lastVisit?: string;
+}
+
+interface Appointment {
+  id: string;
+  patientName: string;
+  patientId: string;
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+  notes?: string;
+}
+
+export default function DoctorDashboardPage() {
+  const { user: authUser, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [doctorData, setDoctorData] = useState<DoctorData | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState({
+    profile: false,
+    patients: false,
+    appointments: false,
   });
+  const [showAddPatientForm, setShowAddPatientForm] = useState(false);
 
-  // Fetch doctorId from localStorage once component mounts
-  useEffect(() => {
-    const id = localStorage.getItem("doctorId");
-    setDoctorId(id);
-  }, []);
+  // Mock data for now - will be replaced with real API calls
+  const mockPatients: Patient[] = [
+    {
+      _id: "1",
+      fullname: "John Doe",
+      email: "john.doe@example.com",
+      phone: "123-456-7890",
+      age: 45,
+      gender: "Male",
+      chronicConditions: ["Diabetes", "Hypertension"],
+      allergies: ["Peanuts"],
+      symptoms: ["Fatigue", "Headache"],
+      lastVisit: "2024-01-10",
+    },
+    {
+      _id: "2",
+      fullname: "Jane Smith",
+      email: "jane.smith@example.com",
+      phone: "098-765-4321",
+      age: 32,
+      gender: "Female",
+      chronicConditions: ["Asthma"],
+      allergies: ["Penicillin"],
+      symptoms: ["Cough", "Shortness of breath"],
+      lastVisit: "2024-01-08",
+    },
+  ];
 
-  // Fetch patients after doctorId is available
-  useEffect(() => {
-    if (!doctorId) return;
-    fetchPatients();
-  }, [doctorId]);
+  const mockAppointments: Appointment[] = [
+    {
+      id: "1",
+      patientName: "John Doe",
+      patientId: "1",
+      date: "2024-01-15",
+      time: "10:00 AM",
+      type: "Check-up",
+      status: "Confirmed",
+      notes: "Follow-up for diabetes management",
+    },
+    {
+      id: "2",
+      patientName: "Jane Smith",
+      patientId: "2",
+      date: "2024-01-16",
+      time: "2:30 PM",
+      type: "Consultation",
+      status: "Pending",
+      notes: "New patient consultation",
+    },
+  ];
 
-  // Fetch all patients of the logged-in doctor
-  const fetchPatients = async () => {
+  const getDoctorData = async () => {
+    setLoading((prev) => ({ ...prev, profile: true }));
     try {
-      const res = await axios.get(
-        `http://localhost:5001/api/patient?doctorId=${doctorId}`
-      );
-      setPatients(res.data.patients);
-    } catch (err) {
-      console.error("Error fetching patients:", err);
+      const response = await doctorApi.getCurrentDoctor();
+      if (response.success && response.data) {
+        setDoctorData(response.data as DoctorData);
+      }
+    } catch (error) {
+      console.error("Error fetching doctor data:", error);
+    } finally {
+      setLoading((prev) => ({ ...prev, profile: false }));
     }
   };
 
-  // Handle input for normal and nested fields
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    if (name.startsWith("address.")) {
-      const field = name.split(".")[1];
-      setForm((prev) => ({
-        ...prev,
-        address: {
-          ...prev.address,
-          [field]: value,
-        },
-      }));
-    } else {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+  const getPatients = async () => {
+    setLoading((prev) => ({ ...prev, patients: true }));
+    try {
+      // TODO: Replace with real API call
+      setPatients(mockPatients);
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+    } finally {
+      setLoading((prev) => ({ ...prev, patients: false }));
     }
   };
 
-  // Submit form to create new patient
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePatientAdded = () => {
+    getPatients(); // Refresh the patient list
+  };
 
-    if (!doctorId) return alert("Doctor ID not found");
-
+  const getAppointments = async () => {
+    setLoading((prev) => ({ ...prev, appointments: true }));
     try {
-      await axios.post("http://localhost:5001/api/patient/add", {
-        ...form,
-        doctorId,
-        age: Number(form.age),
-        chronicConditions: form.chronicConditions
-          .split(",")
-          .map((s) => s.trim()),
-        allergies: form.allergies.split(",").map((s) => s.trim()),
-        symptoms: form.symptoms.split(",").map((s) => s.trim()),
-      });
+      // TODO: Replace with real API call
+      setAppointments(mockAppointments);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    } finally {
+      setLoading((prev) => ({ ...prev, appointments: false }));
+    }
+  };
 
-      setForm({
-        fullname: "",
-        email: "",
-        password: "",
-        gender: "male",
-        age: "",
-        phone: "",
-        address: {
-          street: "",
-          city: "",
-          state: "",
-          zip: "",
-          country: "India",
-        },
-        chronicConditions: "",
-        allergies: "",
-        symptoms: "",
-      });
+  useEffect(() => {
+    if (authUser && !authLoading) {
+      getDoctorData();
+      getPatients();
+      getAppointments();
+    }
+  }, [authUser, authLoading]);
 
-      fetchPatients(); // Refresh list
-    } catch (err) {
-      console.error("Error adding patient:", err);
-      alert("Error adding patient");
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !authUser) {
+      router.push("/doctor/login");
+    }
+  }, [authUser, authLoading, router]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return null;
+  }
+
+  const formatAddress = (address: DoctorData["address"]) => {
+    return `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-4">Doctor Dashboard</h1>
+    <ProtectedRoute allowedRoles={["doctor"]}>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar user={doctorData || authUser} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, Dr. {doctorData?.fullname || authUser.fullname}!
+            </h1>
+            <p className="text-gray-600">
+              Here's your practice overview for today
+            </p>
+          </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 gap-4 max-w-2xl mb-8"
-        >
-          <input
-            name="fullname"
-            value={form.fullname}
-            placeholder="Full Name"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="email"
-            value={form.email}
-            placeholder="Email"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="password"
-            value={form.password}
-            placeholder="Password"
-            type="password"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="age"
-            value={form.age}
-            placeholder="Age"
-            type="number"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="phone"
-            value={form.phone}
-            placeholder="Phone"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="gender"
-            value={form.gender}
-            placeholder="Gender"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="chronicConditions"
-            value={form.chronicConditions}
-            placeholder="Chronic Conditions (comma separated)"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="allergies"
-            value={form.allergies}
-            placeholder="Allergies (comma separated)"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="symptoms"
-            value={form.symptoms}
-            placeholder="Symptoms (comma separated)"
-            className="border p-2"
-            onChange={handleInput}
-          />
+          {/* Practice Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <HealthCard
+              icon={Users}
+              title="Total Patients"
+              value={patients.length}
+              color="blue"
+            />
+            <HealthCard
+              icon={Calendar}
+              title="Today's Appointments"
+              value={
+                appointments.filter((a) => a.status === "Confirmed").length
+              }
+              color="green"
+            />
+            <HealthCard
+              icon={TrendingUp}
+              title="Active Cases"
+              value={patients.filter((p) => p.symptoms.length > 0).length}
+              color="purple"
+            />
+            <HealthCard
+              icon={MessageSquare}
+              title="Pending Messages"
+              value="3"
+              color="orange"
+            />
+          </div>
 
-          <h2 className="text-lg font-semibold mt-4">Address</h2>
-          <input
-            name="address.street"
-            value={form.address.street}
-            placeholder="Street"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="address.city"
-            value={form.address.city}
-            placeholder="City"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="address.state"
-            value={form.address.state}
-            placeholder="State"
-            className="border p-2"
-            onChange={handleInput}
-          />
-          <input
-            name="address.zip"
-            value={form.address.zip}
-            placeholder="ZIP Code"
-            className="border p-2"
-            onChange={handleInput}
-          />
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Profile and Quick Actions */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Profile Card */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Profile
+                  </h2>
+                  <button className="p-2 text-gray-400 hover:text-gray-600">
+                    <Edit className="h-4 w-4" />
+                  </button>
+                </div>
+                {loading.profile ? (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Stethoscope className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="font-medium text-gray-900">
+                          Dr. {doctorData?.fullname || authUser.fullname}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {doctorData?.specialization || "General Medicine"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-600">
+                          {doctorData?.phone || authUser.phone}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-gray-600">
+                          {doctorData?.address
+                            ? formatAddress(doctorData.address)
+                            : "Address not available"}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
-          <button type="submit" className="bg-blue-600 text-white p-2 rounded">
-            Add Patient
-          </button>
-        </form>
+              {/* Quick Actions */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Quick Actions
+                </h2>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setShowAddPatientForm(true)}
+                    className="w-full flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <Plus className="h-5 w-5 text-blue-600 mr-3" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Add New Patient
+                    </span>
+                  </button>
+                  <button className="w-full flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <Calendar className="h-5 w-5 text-green-600 mr-3" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Schedule Appointment
+                    </span>
+                  </button>
+                  <button className="w-full flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <FileText className="h-5 w-5 text-purple-600 mr-3" />
+                    <span className="text-sm font-medium text-gray-700">
+                      View Medical Records
+                    </span>
+                  </button>
+                  <button className="w-full flex items-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                    <MessageSquare className="h-5 w-5 text-orange-600 mr-3" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Patient Messages
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-        <h2 className="text-2xl font-semibold mb-2">Patients</h2>
-        <ul className="space-y-2">
-          {patients.map((p: any) => (
-            <li key={p._id} className="border p-3 rounded">
-              <strong>{p.fullname}</strong> — Age: {p.age}, Gender: {p.gender},
-              Symptoms: {p.symptoms.join(", ")}
-            </li>
-          ))}
-        </ul>
+            {/* Right Column - Patients and Appointments */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Today's Appointments */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Today's Appointments
+                  </h2>
+                  <button className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Schedule New
+                  </button>
+                </div>
+                {loading.appointments ? (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {appointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center">
+                          <div className="p-2 bg-blue-100 rounded-lg mr-4">
+                            <User className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">
+                              {appointment.patientName}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {appointment.type}
+                            </p>
+                            <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {appointment.date} at {appointment.time}
+                            </div>
+                            {appointment.notes && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {appointment.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            appointment.status
+                          )}`}
+                        >
+                          {appointment.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Patient List */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Recent Patients
+                  </h2>
+                  <button
+                    onClick={() => setShowAddPatientForm(true)}
+                    className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Patient
+                  </button>
+                </div>
+                {loading.patients ? (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {patients.map((patient) => (
+                      <div
+                        key={patient._id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center">
+                          <div className="p-2 bg-green-100 rounded-lg mr-4">
+                            <User className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">
+                              {patient.fullname}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {patient.age} years old • {patient.gender}
+                            </p>
+                            <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {patient.phone}
+                            </div>
+                            {patient.lastVisit && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                Last visit: {patient.lastVisit}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {patient.chronicConditions
+                              .slice(0, 2)
+                              .map((condition, index) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                                >
+                                  {condition}
+                                </span>
+                              ))}
+                            {patient.chronicConditions.length > 2 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                                +{patient.chronicConditions.length - 2}
+                              </span>
+                            )}
+                          </div>
+                          <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Add Patient Form Modal */}
+        <AddPatientForm
+          isOpen={showAddPatientForm}
+          onClose={() => setShowAddPatientForm(false)}
+          onSuccess={handlePatientAdded}
+        />
       </div>
-    </>
+    </ProtectedRoute>
   );
 }

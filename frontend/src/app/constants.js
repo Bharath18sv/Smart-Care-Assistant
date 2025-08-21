@@ -53,3 +53,35 @@ export const SYMPTOMS = [
   "Loss of Taste",
   "Loss of Smell",
 ];
+
+export const SPECIALIZATION = [
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Pediatrics",
+  "Psychiatry",
+  "General Medicine",
+  "Orthopedics",
+  "Radiology",
+  "Oncology",
+  "ENT",
+  "Endocrinologist",
+  "Pulmonologist",
+  "Neurologist",
+  "Gastroenterologist",
+  "Psychiatrist",
+  "Orthopedic/Rheumatologist",
+];
+
+export const QUALIFICATIONS = [
+  "MBBS",
+  "MD",
+  "DO",
+  "BDS",
+  "BHMS",
+  "BAMS",
+  "BNYS",
+  "BPT",
+];
+
+export const GENDER = ["Male", "Female", "Other"];

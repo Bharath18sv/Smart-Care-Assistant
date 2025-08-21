@@ -141,7 +141,8 @@ const loginPatient = asyncHandler(async (req, res) => {
     throw new ApiError(401, `User with email: ${email} doesn't exist`);
   }
 
-  if (!patient.isPasswordCorrect(password)) {
+  const isPasswordCorrect = await patient.isPasswordCorrect(password);
+  if (!isPasswordCorrect) {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
   }
@@ -150,7 +151,7 @@ const loginPatient = asyncHandler(async (req, res) => {
   );
 
   //get the logged in patient details to send the response
-  const loggedInPatient = await Patient.findById(Patient._id).select(
+  const loggedInPatient = await Patient.findById(patient._id).select(
     "-password -refreshToken"
   );
 

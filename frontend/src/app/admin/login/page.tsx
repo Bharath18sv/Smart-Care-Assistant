@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -10,7 +10,29 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
+
+  // If already authenticated as admin, redirect to dashboard immediately
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const role = localStorage.getItem("userRole");
+    if (token && role === "admin") {
+      router.replace("/admin/dashboard");
+    }
+  }, [router]);
+
+  // Load remembered credentials on component mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    const rememberedRole = localStorage.getItem("rememberedRole");
+
+    if (rememberedEmail && rememberedRole === "admin") {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,22 +40,22 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/login`,
-        { email, password }
-      );
-      const { accessToken, refreshToken, admin } = response.data.data;
+      // Perform admin login via AuthContext; this sets tokens and user role
+      await login(email, password, "admin");
 
-      localStorage.setItem("adminToken", accessToken);
-      localStorage.setItem("adminRefreshToken", refreshToken);
-      localStorage.setItem("adminData", JSON.stringify(admin));
+      // Handle remember me functionality
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberedRole", "admin");
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedRole");
+      }
 
-      router.push("/admin/dashboard");
+      // Navigate to dashboard on success
+      router.replace("/admin/dashboard");
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          "Login failed. Please check your credentials."
-      );
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +68,7 @@ export default function AdminLoginPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-red-600 to-pink-600  bg-clip-text text-transparent">
                 Smart Care Assistant
               </h1>
             </Link>
@@ -183,6 +205,24 @@ export default function AdminLoginPage() {
                     )}
                   </button>
                 </div>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-700"
+                >
+                  Remember me
+                </label>
               </div>
 
               {/* Error Message */}

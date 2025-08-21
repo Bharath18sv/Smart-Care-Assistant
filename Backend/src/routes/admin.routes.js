@@ -3,6 +3,7 @@ import {
   registerAdmin,
   loginAdmin,
   logoutAdmin,
+  getCurrentAdmin,
   addDoctor,
   getAllDoctors,
   getDoctorById,
@@ -34,6 +35,9 @@ router.get(
   checkPermission("viewAnalytics"),
   getDashboardStats
 );
+
+// Current admin profile
+router.get("/me", getCurrentAdmin);
 
 // Doctor Management
 router.post("/doctors", checkPermission("manageDoctors"), addDoctor);

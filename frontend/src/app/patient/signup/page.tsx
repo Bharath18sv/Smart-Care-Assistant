@@ -3,8 +3,9 @@
 import Select from "react-select";
 import { useForm, Controller } from "react-hook-form";
 import { useState, useEffect, useCallback, memo } from "react";
-import axios from "axios";
 import { CHRONIC_CONDITIONS, ALLERGIES, SYMPTOMS } from "@/app/constants";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 type FormData = {
   email: string;
@@ -80,6 +81,8 @@ export default function PatientSignupPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+  const { register: registerUser } = useAuth();
 
   // Memoize options to prevent unnecessary re-renders
   const createOptions = useCallback(
@@ -92,7 +95,7 @@ export default function PatientSignupPage() {
   }, []);
 
   const onSubmit = async (data: FormData) => {
-    console.log(`Submitted data: ${data}`);
+    console.log(`Submitted data: ${JSON.stringify(data)}`);
 
     // Additional validation before submission
     if (data.age < 1 || data.age > 100) {
@@ -140,12 +143,13 @@ export default function PatientSignupPage() {
 
     setLoading(true);
     try {
-      await axios.post("http://localhost:5001/api/patients/register", data);
+      await registerUser(data, "patient");
       setMessage("Patient registered successfully!");
       reset();
+      router.push("/patient/dashboard");
     } catch (error: any) {
       console.error(error);
-      setMessage("Registration failed. Please try again.");
+      setMessage(error.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
