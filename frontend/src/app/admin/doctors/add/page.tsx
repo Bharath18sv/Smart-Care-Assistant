@@ -5,7 +5,12 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/utils/api";
 import { SPECIALIZATION, QUALIFICATIONS } from "@/app/constants";
-import Select from "react-select";
+import Select, { MultiValue } from "react-select";
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export default function AddDoctorPage() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -13,12 +18,15 @@ export default function AddDoctorPage() {
     email: "",
     password: "",
     fullname: "",
-    specialization: [],
-    qualifications: [],
+    specialization: [] as string[],
+    qualifications: [] as string[],
     experience: "",
     about: "",
     phone: "",
   });
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] =
+    useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,21 +50,59 @@ export default function AddDoctorPage() {
     }));
   };
 
-  const handleSpecializationChange = (selectedOptions: any) => {
+  const handleProfilePictureChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Profile picture must be less than 5MB");
+        return;
+      }
+
+      setProfilePicture(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePicturePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(""); // Clear any previous errors
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    setProfilePicturePreview("");
+  };
+
+  const handleSpecializationChange = (
+    selectedOptions: MultiValue<SelectOption>
+  ) => {
     const values = selectedOptions
-      ? selectedOptions.map((option: any) => option.value)
+      ? selectedOptions.map((option: SelectOption) => option.value)
       : [];
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
       specialization: values,
     }));
   };
 
-  const handleQualificationsChange = (selectedOptions: any) => {
+  const handleQualificationsChange = (
+    selectedOptions: MultiValue<SelectOption>
+  ) => {
     const values = selectedOptions
-      ? selectedOptions.map((option: any) => option.value)
+      ? selectedOptions.map((option: SelectOption) => option.value)
       : [];
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
       qualifications: values,
     }));
@@ -491,6 +537,63 @@ export default function AddDoctorPage() {
                 placeholder="Brief description about the doctor's expertise, experience, and approach to patient care..."
                 required
               />
+            </div>
+
+            {/* Profile Picture */}
+            <div>
+              <label
+                htmlFor="profile-picture"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Profile Picture
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
+                  {profilePicturePreview ? (
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
+                      <svg
+                        className="h-10 w-10"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    id="profile-picture"
+                    name="profile-picture"
+                    accept="image/*"
+                    onChange={handleProfilePictureChange}
+                    className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {profilePicture && (
+                    <button
+                      type="button"
+                      onClick={removeProfilePicture}
+                      className="mt-2 px-3 py-1 bg-red-500 text-white rounded-md text-xs"
+                    >
+                      Remove Picture
+                    </button>
+                  )}
+                </div>
+              </div>
+              {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
 
             {/* Submit Button */}

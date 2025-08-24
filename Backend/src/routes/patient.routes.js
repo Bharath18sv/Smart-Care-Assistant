@@ -8,6 +8,7 @@ import {
   updatePassword,
   updateProfilePic,
   getCurrentPatient,
+  getRecentPatients
 } from "../controllers/patient.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
@@ -27,5 +28,8 @@ router
   .route("/updateProfilePic")
   .post(verifyJwt, upload.single("ProfilePicture"), updateProfilePic);
 router.route("/me").get(verifyJwt, getCurrentPatient);
+
+//admin routes
+router.route("/recent").get(getRecentPatients);
 
 export default router;

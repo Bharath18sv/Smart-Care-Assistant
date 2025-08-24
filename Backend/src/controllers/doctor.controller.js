@@ -93,17 +93,17 @@ const registerDoctor = asyncHandler(async (req, res) => {
   }
 });
 
-const generateAccessRefreshToken = async (DoctorId) => {
+const generateAccessRefreshToken = async (doctorId) => {
   try {
-    const Doctor = await Doctor.findById(DoctorId);
+    const doctor = await Doctor.findById(doctorId);
 
-    if (!Doctor) {
-      console.log(`No Doctor with Doctor id: ${DoctorId}`);
-      throw new ApiError(400, `No Doctor with Doctor id: ${DoctorId}`);
+    if (!doctor) {
+      console.log(`No Doctor with Doctor id: ${doctorId}`);
+      throw new ApiError(400, `No Doctor with Doctor id: ${doctorId}`);
     }
 
-    const refreshToken = await Doctor.generateRefreshToken();
-    const accessToken = await Doctor.generateAccessToken();
+    const refreshToken = await doctor.generateRefreshToken();
+    const accessToken = await doctor.generateAccessToken();
 
     if (!refreshToken && !accessToken) {
       console.log("Error while generating tokens");
@@ -111,10 +111,10 @@ const generateAccessRefreshToken = async (DoctorId) => {
     }
 
     //store the refreshToken for the Doctor
-    Doctor.refreshToken = refreshToken;
+    doctor.refreshToken = refreshToken;
 
     //save the Doctor data without validating everything again
-    await Doctor.save({ validateBeforeSave: false });
+    await doctor.save({ validateBeforeSave: false });
 
     return { refreshToken, accessToken };
   } catch (error) {
@@ -139,7 +139,7 @@ const loginDoctor = asyncHandler(async (req, res) => {
     throw new ApiError(401, `User with email: ${email} doesn't exist`);
   }
 
-  if (!Doctor.isPasswordCorrect(password)) {
+  if (!doctor.isPasswordCorrect(password)) {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
   }
@@ -173,7 +173,7 @@ const loginDoctor = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   //accept the refresh token from the user for verification
-  const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken;
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingRefreshToken) {
     console.log("Refresh Token is required");
@@ -185,9 +185,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET
   );
 
-  const Doctor = await Doctor.findById(decodedPayload._id);
+  const doctor = await Doctor.findById(decodedPayload._id);
 
-  if (!Doctor) {
+  if (!doctor) {
     console.log(
       `Can't find the user with the given refreshtoken: ${incomingRefreshToken}`
     );
@@ -198,14 +198,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 
   //check whether token matches
-  if (incomingRefreshToken !== Doctor?.refreshToken) {
+  if (incomingRefreshToken !== doctor?.refreshToken) {
     console.log(`Tokens did not match/Invalid refresh Token`);
     throw new ApiError(401, `Tokens did not match/Invalid refresh Token`);
   }
 
   //if token matches, generate the access token
   const { refreshToken, accessToken } = await generateAccessRefreshToken(
-    Doctor._id
+    doctor._id
   );
 
   const options = {
@@ -301,10 +301,18 @@ const getCurrentDoctor = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User details fetched successfully"));
 });
 
+const getRecentDoctors = asyncHandler(async (req, res) => {
+  const doctors = await Doctor.find().sort({ createdAt: -1 }).limit(5);
+  res
+    .status(200)
+    .json(new ApiResponse(200, doctors, "Recent doctors fetched successfully"));
+});
+
 export {
   registerDoctor,
   loginDoctor,
   refreshAccessToken,
+  getRecentDoctors,
   addPatient,
   getPatientsForDoctor,
   getCurrentDoctor,

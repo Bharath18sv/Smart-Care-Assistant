@@ -87,9 +87,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(userData);
     } catch (error) {
       console.error("Error fetching current user:", error);
-      // Clear invalid session
-      setUserRole(null);
-      authUtils.removeAuthToken();
+      // Don't clear user data on network errors during refresh
+      // Only clear if it's an authentication error (401)
+      if (error instanceof Error && error.message.includes("401")) {
+        setUserRole(null);
+        authUtils.removeAuthToken();
+      }
     }
   };
 

@@ -372,6 +372,17 @@ const getCurrentPatient = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Patient fetched successfully"));
 });
 
+const getRecentPatients = asyncHandler(async (req, res) => {
+  const patients = await Patient.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, patients, "Recent patients fetched successfully"));
+});
+
 export {
   registerPatient,
   loginPatient,
@@ -381,4 +392,5 @@ export {
   updateInfo,
   updateProfilePic,
   getCurrentPatient,
+  getRecentPatients
 };

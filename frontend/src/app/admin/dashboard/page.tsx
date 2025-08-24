@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserRole } from "@/utils/roles";
 import { ROUTES } from "@/utils/routes";
+import axios from "axios";
 
 interface DashboardStats {
   totalDoctors: number;
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Check if admin is logged in
     const currentRole = getUserRole();
-    
+
     if (!currentRole || currentRole !== "admin") {
       router.replace(ROUTES.ADMIN_LOGIN);
       return;
@@ -38,9 +39,32 @@ export default function AdminDashboard() {
   }, [user, userRole, router]);
 
   const fetchDashboardStats = async () => {
+    setLoading(true);
     try {
-      // This will be implemented when backend endpoints are ready
-      // For now, just set loading to false
+      // For now, use mock data since backend endpoints might not be ready
+      // TODO: Replace with actual API calls when backend is ready
+      const mockDoctors = [
+        { _id: '1', fullname: 'Dr. John Smith', email: 'john.smith@example.com', status: 'approved', specialization: 'Cardiology' },
+        { _id: '2', fullname: 'Dr. Sarah Johnson', email: 'sarah.johnson@example.com', status: 'pending', specialization: 'Neurology' },
+        { _id: '3', fullname: 'Dr. Michael Brown', email: 'michael.brown@example.com', status: 'approved', specialization: 'Pediatrics' }
+      ];
+      
+      const mockPatients = [
+        { _id: '1', fullname: 'Alice Wilson', email: 'alice.wilson@example.com', age: 35, gender: 'Female' },
+        { _id: '2', fullname: 'Bob Davis', email: 'bob.davis@example.com', age: 42, gender: 'Male' },
+        { _id: '3', fullname: 'Carol Miller', email: 'carol.miller@example.com', age: 28, gender: 'Female' }
+      ];
+
+      setStats({
+        totalDoctors: mockDoctors.length,
+        approvedDoctors: mockDoctors.filter((d: any) => d.status === "approved").length,
+        pendingDoctors: mockDoctors.filter((d: any) => d.status === "pending").length,
+        totalPatients: mockPatients.length,
+        totalAdmins: 1,
+        recentDoctors: mockDoctors,
+        recentPatients: mockPatients,
+      });
+
       setLoading(false);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch dashboard data");
@@ -48,7 +72,6 @@ export default function AdminDashboard() {
         logout();
         router.replace(ROUTES.ADMIN_LOGIN);
       }
-    } finally {
       setLoading(false);
     }
   };
