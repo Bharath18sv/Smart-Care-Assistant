@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserRole } from "@/utils/roles";
+import { ROUTES } from "@/utils/routes";
 
 // Doctor Login Page
 // - Handles doctor authentication via AuthContext
@@ -18,12 +20,15 @@ export default function DoctorLoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  // If already authenticated as doctor, redirect immediately
+  // Check if user is already authenticated and redirect
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const role = localStorage.getItem("userRole");
-    if (token && role === "doctor") {
-      router.replace("/doctor/dashboard");
+    const userRole = getUserRole();
+    if (userRole === "doctor") {
+      router.replace(ROUTES.DOCTOR_DASHBOARD);
+    } else if (userRole === "admin") {
+      router.replace(ROUTES.ADMIN_DASHBOARD);
+    } else if (userRole === "patient") {
+      router.replace(ROUTES.PATIENT_DASHBOARD);
     }
   }, [router]);
 
@@ -52,7 +57,7 @@ export default function DoctorLoginPage() {
         localStorage.removeItem("rememberedEmail");
         localStorage.removeItem("rememberedRole");
       }
-
+      // setUserRole is already called in AuthContext.login()
       router.replace("/doctor/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");

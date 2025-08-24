@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserRole } from "@/utils/roles";
+import { ROUTES } from "@/utils/routes";
 
 interface DashboardStats {
   totalDoctors: number;
@@ -18,43 +20,33 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [adminData, setAdminData] = useState<any>(null);
+  const { user, userRole, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Check if admin is logged in
-    const token = localStorage.getItem("adminToken");
-    const adminDataStr = localStorage.getItem("adminData");
-
-    if (!token || !adminDataStr) {
-      router.push("/admin/login");
+    const currentRole = getUserRole();
+    
+    if (!currentRole || currentRole !== "admin") {
+      router.replace(ROUTES.ADMIN_LOGIN);
       return;
     }
 
-    try {
-      setAdminData(JSON.parse(adminDataStr));
+    if (user && userRole === "admin") {
       fetchDashboardStats();
-    } catch (error) {
-      router.push("/admin/login");
     }
-  }, [router]);
+  }, [user, userRole, router]);
 
   const fetchDashboardStats = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/dashboard/stats`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setStats(response.data.data);
+      // This will be implemented when backend endpoints are ready
+      // For now, just set loading to false
+      setLoading(false);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch dashboard data");
       if (err.response?.status === 401) {
-        router.push("/admin/login");
+        logout();
+        router.replace(ROUTES.ADMIN_LOGIN);
       }
     } finally {
       setLoading(false);
@@ -62,10 +54,8 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminRefreshToken");
-    localStorage.removeItem("adminData");
-    router.push("/admin/login");
+    logout();
+    router.replace(ROUTES.ADMIN_LOGIN);
   };
 
   if (loading) {
@@ -114,7 +104,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
-                Welcome, {adminData?.fullname}
+                Welcome, {user?.fullname}
               </span>
               <button
                 onClick={handleLogout}

@@ -6,6 +6,7 @@ import {
   refreshAccessToken,
   addPatient,
   getPatientsForDoctor,
+  getCurrentDoctor
 } from "../controllers/doctor.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 
@@ -19,5 +20,6 @@ router.route("/refreshToken").post(refreshAccessToken);
 router.route("/registerPatient").post(verifyJwt, registerPatient);
 router.route("/addPatient").post(verifyJwt, addPatient);
 router.route("/").get(verifyJwt, getPatientsForDoctor);
+router.route("/me").get(verifyJwt, getCurrentDoctor);
 
 export default router;

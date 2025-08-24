@@ -496,7 +496,7 @@ export default function AddDoctorPage() {
             {/* Submit Button */}
             <div className="flex justify-end space-x-4">
               <Link
-                href="/admin/doctors"
+                href="/admin/dashboard"
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors duration-200"
               >
                 Cancel

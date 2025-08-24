@@ -25,6 +25,7 @@ const doctorSchema = new Schema(
       trim: true,
       index: true,
     },
+    
     profilePic: {
       type: String, //cloudinary url
     },

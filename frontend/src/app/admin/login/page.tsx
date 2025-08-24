@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserRole } from "@/utils/roles";
+import { ROUTES } from "@/utils/routes";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -14,12 +16,15 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  // If already authenticated as admin, redirect to dashboard immediately
+  // Check if user is already authenticated and redirect
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const role = localStorage.getItem("userRole");
-    if (token && role === "admin") {
-      router.replace("/admin/dashboard");
+    const userRole = getUserRole();
+    if (userRole === "admin") {
+      router.replace(ROUTES.ADMIN_DASHBOARD);
+    } else if (userRole === "patient") {
+      router.replace(ROUTES.PATIENT_DASHBOARD);
+    } else if (userRole === "doctor") {
+      router.replace(ROUTES.DOCTOR_DASHBOARD);
     }
   }, [router]);
 
@@ -51,7 +56,7 @@ export default function AdminLoginPage() {
         localStorage.removeItem("rememberedEmail");
         localStorage.removeItem("rememberedRole");
       }
-
+      // setUserRole is already called in AuthContext.login()
       // Navigate to dashboard on success
       router.replace("/admin/dashboard");
     } catch (err: any) {

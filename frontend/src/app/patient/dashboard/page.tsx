@@ -1,3 +1,8 @@
+// •	Quick stats:
+// 	•	Today’s meds taken / missed.
+// 	•	Symptoms logged today.
+// 	•	Any ADR alerts.
+
 "use client";
 
 import { useState, useEffect } from "react";

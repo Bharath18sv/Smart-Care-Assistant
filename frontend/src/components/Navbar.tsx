@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ROUTES } from "@/utils/routes";
 
 interface User {
   fullname?: string;
@@ -29,7 +30,7 @@ const Navbar = ({ user }: { user: User }) => {
   const handleLogout = () => {
     // NOTE: We only navigate here; actual token clearing is done by AuthContext.logout.
     // If this component is used outside AuthContext, consider clearing localStorage too.
-    router.push("/patient/login");
+    router.push(ROUTES.PATIENT_LOGIN);
   };
 
   return (
@@ -48,7 +49,7 @@ const Navbar = ({ user }: { user: User }) => {
             </span>
             {/* Link to dedicated Patient Profile page */}
             <Link
-              href="/patient/profile"
+              href={ROUTES.PATIENT_PROFILE}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               Profile

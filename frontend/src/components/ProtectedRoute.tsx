@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinner from "./LoadingSpinner";
+import { ROUTES } from "@/utils/routes";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,10 +12,10 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-export default function ProtectedRoute({ 
-  children, 
+export default function ProtectedRoute({
+  children,
   allowedRoles = ["patient", "doctor", "admin"],
-  redirectTo = "/login"
+  redirectTo,
 }: ProtectedRouteProps) {
   const { user, loading, userRole } = useAuth();
   const router = useRouter();
@@ -22,21 +23,30 @@ export default function ProtectedRoute({
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        router.push(redirectTo);
-      } else if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole as any)) {
+        // Redirect to appropriate login based on current role or default to home
+        if (redirectTo) {
+          router.push(redirectTo);
+        } else {
+          router.push(ROUTES.HOME);
+        }
+      } else if (
+        allowedRoles.length > 0 &&
+        userRole &&
+        !allowedRoles.includes(userRole as any)
+      ) {
         // Redirect to appropriate dashboard based on user role
         switch (userRole) {
           case "patient":
-            router.push("/patient/dashboard");
+            router.push(ROUTES.PATIENT_DASHBOARD);
             break;
           case "doctor":
-            router.push("/doctor/dashboard");
+            router.push(ROUTES.DOCTOR_DASHBOARD);
             break;
           case "admin":
-            router.push("/admin/dashboard");
+            router.push(ROUTES.ADMIN_DASHBOARD);
             break;
           default:
-            router.push(redirectTo);
+            router.push(ROUTES.HOME);
         }
       }
     }
@@ -54,9 +64,13 @@ export default function ProtectedRoute({
     return null;
   }
 
-  if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole as any)) {
+  if (
+    allowedRoles.length > 0 &&
+    userRole &&
+    !allowedRoles.includes(userRole as any)
+  ) {
     return null;
   }
 
   return <>{children}</>;
-} 
+}

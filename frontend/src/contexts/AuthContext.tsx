@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { authUtils, patientApi, doctorApi, adminApi } from "@/utils/api";
+import { getUserRole, setUserRole } from "@/utils/roles";
 
 interface User {
   _id: string;
@@ -44,31 +45,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRoleState] = useState<string | null>(null);
 
-  const isAuthenticated = authUtils.isAuthenticated();
-  const userRole = authUtils.getUserRole();
-
-  const fetchCurrentUser = async () => {
+  // Check if user is authenticated on mount
+  const checkAuthStatus = async () => {
     try {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
+      const role = getUserRole();
+      if (role) {
+        setUserRoleState(role);
+        // Try to fetch current user data
+        await fetchCurrentUser(role);
       }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const fetchCurrentUser = async (role: string) => {
+    try {
       let userData;
-      switch (userRole) {
+      switch (role) {
         case "patient":
           const patientResponse = await patientApi.getCurrentPatient();
-          userData = { ...patientResponse.data, role: "patient" };
+          userData = { ...(patientResponse.data || {}), role: "patient" };
           break;
         case "doctor":
           const doctorResponse = await doctorApi.getCurrentDoctor();
-          userData = { ...doctorResponse.data, role: "doctor" };
+          userData = { ...(doctorResponse.data || {}), role: "doctor" };
           break;
         case "admin":
           // Validate admin session by fetching current admin profile
           const adminResponse = await adminApi.getCurrentAdmin();
-          userData = { ...adminResponse.data, role: "admin" } as any;
+          userData = { ...(adminResponse.data || {}), role: "admin" } as any;
           break;
         default:
           throw new Error("Invalid user role");
@@ -77,14 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(userData);
     } catch (error) {
       console.error("Error fetching current user:", error);
+      // Clear invalid session
+      setUserRole(null);
       authUtils.removeAuthToken();
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCurrentUser();
+    checkAuthStatus();
   }, []);
 
   const login = async (
@@ -127,6 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           throw new Error("Invalid login response payload");
         }
 
+        // Set user role in localStorage and state
+        setUserRole(role);
+        setUserRoleState(role);
         setUser(userData as User);
       } else {
         throw new Error(response.message || "Login failed");
@@ -139,18 +152,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {
     try {
-      if (userRole === "patient") {
-        await patientApi.logout();
-      } else if (userRole === "doctor") {
-        await doctorApi.logout();
-      } else if (userRole === "admin") {
-        await adminApi.logout();
+      if (userRole) {
+        switch (userRole) {
+          case "patient":
+            await patientApi.logout();
+            break;
+          case "doctor":
+            await doctorApi.logout();
+            break;
+          case "admin":
+            await adminApi.logout();
+            break;
+        }
       }
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      authUtils.removeAuthToken();
+      // Clear all auth data
+      setUserRole(null);
+      setUserRoleState(null);
       setUser(null);
+      authUtils.removeAuthToken();
     }
   };
 
@@ -183,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     login,
     logout,
     register,
-    isAuthenticated,
+    isAuthenticated: !!user && !!userRole,
     userRole,
   };
 

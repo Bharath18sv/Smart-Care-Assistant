@@ -132,9 +132,9 @@ const loginDoctor = asyncHandler(async (req, res) => {
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
-  const Doctor = await Doctor.findOne({ email });
+  const doctor = await Doctor.findOne({ email });
 
-  if (!Doctor) {
+  if (!doctor) {
     console.log(`User with email: ${email} doesn't exist`);
     throw new ApiError(401, `User with email: ${email} doesn't exist`);
   }
@@ -144,17 +144,19 @@ const loginDoctor = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Password doesn't match");
   }
   const { refreshToken, accessToken } = await generateAccessRefreshToken(
-    Doctor._id
+    doctor._id
   );
 
   //get the logged in Doctor details to send the response
-  const loggedInDoctor = await Doctor.findById(Doctor._id).select(
+  const loggedInDoctor = await Doctor.findById(doctor._id).select(
     "-password -refreshToken"
   );
 
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    sameSite: "strict", // prevent CSRF
+    maxAge: 1000 * 60 * 60, // 1h
   };
 
   res
@@ -284,10 +286,26 @@ const getPatientsForDoctor = async (req, res) => {
     );
 };
 
+const getCurrentDoctor = asyncHandler(async (req, res) => {
+  const { email } = req.user; // Assuming user details are stored in req.user after authentication
+  if (!email) {
+    return res.status(400).json({ message: "User not authenticated" });
+  }
+
+  const user = await Doctor.findOne({ email }).select(
+    "-password -refreshToken"
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "User details fetched successfully"));
+});
+
 export {
   registerDoctor,
   loginDoctor,
   refreshAccessToken,
   addPatient,
   getPatientsForDoctor,
+  getCurrentDoctor,
 };

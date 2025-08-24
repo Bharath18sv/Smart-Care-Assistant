@@ -9,7 +9,18 @@ import { Patient } from "../models/patient.models.js";
 import jwt from "jsonwebtoken";
 
 const registerPatient = asyncHandler(async (req, res) => {
-  const { email, password, fullname, gender, age, phone, address, chronicConditions, allergies, symptoms } = req.body;
+  const {
+    email,
+    password,
+    fullname,
+    gender,
+    age,
+    phone,
+    address,
+    chronicConditions,
+    allergies,
+    symptoms,
+  } = req.body;
 
   //check whether all fields are passed from the request
   if (
@@ -157,7 +168,9 @@ const loginPatient = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
+    sameSite: "strict", // prevent CSRF
+    maxAge: 1000 * 60 * 60, // 1h
   };
 
   res

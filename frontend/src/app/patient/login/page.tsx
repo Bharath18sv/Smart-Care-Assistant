@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserRole } from "@/utils/roles";
+import { ROUTES } from "@/utils/routes";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +15,18 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
+
+  // Check if user is already authenticated and redirect
+  useEffect(() => {
+    const userRole = getUserRole();
+    if (userRole === "patient") {
+      router.replace(ROUTES.PATIENT_DASHBOARD);
+    } else if (userRole === "admin") {
+      router.replace(ROUTES.ADMIN_DASHBOARD);
+    } else if (userRole === "doctor") {
+      router.replace(ROUTES.DOCTOR_DASHBOARD);
+    }
+  }, [router]);
 
   // Load remembered credentials on component mount
   useEffect(() => {
@@ -41,7 +55,7 @@ export default function LoginPage() {
         localStorage.removeItem("rememberedEmail");
         localStorage.removeItem("rememberedRole");
       }
-
+      // setUserRole is already called in AuthContext.login()
       router.push("/patient/dashboard");
       console.log("user logged in");
     } catch (err: any) {

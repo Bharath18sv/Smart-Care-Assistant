@@ -4,14 +4,19 @@ import cookieParser from "cookie-parser";
 
 const app = e();
 
-//middlewares
+// CORS configuration - simplified and more standard
 app.use(
-  // // cross origin resource sharing, allows different frontend port to access backend with diff port
-  // cors({
-  //   origin: process.env.CORS_ORIGIN,
-  //   credentials: true,
-  // })
-  cors()
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-Requested-With",
+    ],
+  })
 );
 
 app.use(e.json({ limit: "16kb" }));
@@ -34,12 +39,10 @@ import patientRouter from "./routes/patient.routes.js";
 import doctorRouter from "./routes/doctor.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 
-
 //routes
 app.use("/api/healthcheck", healthCheck);
 app.use("/api/patients", patientRouter); //routes should always start with /
 app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
-
 
 export default app;
